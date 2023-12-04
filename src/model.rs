@@ -25,23 +25,24 @@ impl Model {
     pub fn total(&self) -> usize {
         self.todos.len()
     }
+
+    pub fn toggle(&mut self, idx: usize) {
+        let todo = self.todos.iter_mut().nth(idx).unwrap();
+        todo.completed = !todo.completed;
+    }
 }
 
 #[derive(Debug)]
-struct ToDo {
-    text: String,
-    completed: bool,
+pub struct ToDo {
+    pub text: String,
+    pub completed: bool,
 }
 
 impl ToDo {
-    fn new(text: &str) -> Self {
+    pub fn new(text: &str) -> Self {
         Self {
             text: text.to_string(),
             completed: false,
         }
-    }
-
-    pub fn completed(&self) -> bool {
-        self.completed
     }
 }

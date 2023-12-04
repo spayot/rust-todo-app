@@ -4,12 +4,12 @@ use yew::prelude::*;
 use yew::{Component, Context};
 mod model;
 
-use model::Model;
+use model::{Model, ToDo};
 pub enum Msg {
     Add(String),
     Remove(usize),
     RemoveAll,
-    Nothing,
+    Toggle(usize),
 }
 
 pub struct App {
@@ -29,7 +29,9 @@ impl Component for App {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Add(value) => self.model.add(&value),
-            _ => {}
+            Msg::Remove(idx) => self.model.remove(idx),
+            Msg::RemoveAll => self.model.remove_all(),
+            Msg::Toggle(idx) => self.model.toggle(idx),
         };
         true
     }
@@ -37,14 +39,26 @@ impl Component for App {
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <div>
-                <h1> {"ToDo App"} </h1>
-                {self.view_input(ctx.link())}
-                // <button {onclick}>{ "+1" }</button>
-                // <p>{ *counter }</p>
-                <footer class="info">
-                    <p>{ "Double-click to edit a todo" }</p>
-                    <p>{ "Written by " }<a href="https://github.com/spayot/" target="_blank">{ "Sylvain Payot" }</a></p>
-                </footer>
+                <section class="todoapp">
+                    <header class="header">
+                        <h1> {"ToDo App"} </h1>
+                        {self.view_input(ctx.link())}
+                    </header>
+                    <ul class="todo-list">
+                        {for self.model.todos.iter().enumerate().map(|e| self.view_todo(e, ctx.link()))}
+                    </ul>
+                    <div>
+                        <li>
+                            <text>{format!("\tTasks Count: {}", self.model.total())}</text>
+                            <button
+                                class="clear-completed"
+                                onclick= {ctx.link().callback(|_| {Msg::RemoveAll})} width=30>
+                                <b> {"Delete All ToDos"}</b>
+                            </button>
+                        </li>
+                    </div>
+                </section>
+                {self.view_footer()}
             </div>
         }
     }
@@ -63,51 +77,47 @@ impl App {
             }
         });
         html!(
-            <input
+            <li>
+            <input class="new-todo"
                 placeholder="what do you want to do?"
                 {onkeypress}
             />
+            </li>
         )
     }
-}
 
-#[function_component]
-fn App2() -> Html {
-    let state = Model::new();
-    let counter = use_state(|| 0);
-    let onclick = {
-        let counter = counter.clone();
-        move |_| {
-            let value = *counter + 1;
-            counter.set(value);
+    fn view_todo(&self, (idx, todo): (usize, &ToDo), link: &Scope<Self>) -> Html {
+        html! {
+            <li>
+                <div class="view">
+                    <input
+                        type="checkbox"
+                        class="toggle"
+                        checked={todo.completed}
+                        onclick={link.callback(move |_| Msg::Toggle(idx))}
+                    />
+                    <label> {
+                        if todo.completed {
+                            html! {<s>{&todo.text}</s>}
+                        } else {
+                            html! {&todo.text}
+                        }
+                    } </label>
+                    <button class="destroy" onclick={link.callback(move |_| Msg::Remove(idx))} />
+                </div>
+            </li>
         }
-    };
-
-    html! {
-        <div>
-            <h1> {"ToDo App"} </h1>
-            // <input
-            //     placeholder="what do you want to do?",
-            //     value=
-            // />
-            <button {onclick}>{ "+1" }</button>
-            <p>{ *counter }</p>
-            <footer class="info">
-                <p>{ "Double-click to edit a todo" }</p>
-                <p>{ "Written by " }<a href="https://github.com/spayot/" target="_blank">{ "Sylvain Payot" }</a></p>
-            </footer>
-        </div>
     }
 
-    // html! {
-    //     <div>
-    //         <h1> {"ToDo App"} </h1>
-    //         <input
-    //             placeholder="what do you want to do?",
-    //             value=
-    //         />
-    //     </div>
-    // }
+    fn view_footer(&self) -> Html {
+        html! {
+            <footer class="info">
+                <p>{ "Click on toggle to mark task as complete." }</p>
+                <p>{ "Click on X to delete task." }</p>
+                <p>{ "Written by " }<a href="https://github.com/spayot/" target="_blank">{ "Sylvain Payot" }</a></p>
+            </footer>
+        }
+    }
 }
 
 fn main() {
